@@ -10,8 +10,8 @@ EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 PRODUCT_NAME = "Living Proof No Frizz Shampoo (8.0 oz)"
 PRODUCT_URL = "https://www.ulta.com/p/no-frizz-shampoo-pimprod2050683?sku=2635227"
 PROMO_KEYWORDS = [
-    "buy one get one", "bogo", "50% off", "free gift", "promo code", "use code",
-    "sale ends", "limited time offer", "buy 2 get 1 free", "special offer",
+    "buy one get one", "bogo", "50% off", "free gift", "promo code", "use code", "with code",
+    "sale ends", "limited time offer", "buy 2 get 1 free",
     "discount applied at checkout"
 ]
 
