@@ -2,7 +2,6 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import os
-import re
 
 PRODUCTS = {
     "B0CPFWKGPZ": "Lick Snack Chicken Treat",
@@ -31,3 +30,20 @@ def get_amazon_price(asin):
         for selector in selectors:
             tag = soup.select_one(selector)
             if tag:
+                price_text = tag.text.strip()
+                if "Subscribe" in price_text:
+                    continue
+                return price_text
+    except Exception as e:
+        print(f"⚠️ Error fetching {asin}: {e}")
+    return None
+
+def load_last_prices():
+    if os.path.exists(LAST_PRICES_FILE):
+        with open(LAST_PRICES_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_last_prices(data):
+    with open(LAST_PRICES_FILE, "w") as f:
+        json.dump(data, f, in
