@@ -34,4 +34,37 @@ def get_amazon_price(asin):
                     continue  # skip subscribe prices
                 return price_text
     except Exception as e:
-        print(f"⚠️ Error fetching {asin}: {e
+        print(f"⚠️ Error fetching {asin}: {e}")
+    return None
+
+def load_last_prices():
+    if os.path.exists(LAST_PRICES_FILE):
+        with open(LAST_PRICES_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_last_prices(data):
+    with open(LAST_PRICES_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+def main():
+    last_prices = load_last_prices()
+    current_prices = {}
+
+    for asin, name in PRODUCTS.items():
+        print(f"🔍 Checking ASIN: {asin} ({name})")
+        price = get_amazon_price(asin)
+
+        if price:
+            print(f"✅ Current price for {name}: {price}")
+            current_prices[asin] = price
+
+            if asin in last_prices and last_prices[asin] != price:
+                print(f"🔄 Price change for {name}!\n   Previous: {last_prices[asin]} → Now: {price}")
+        else:
+            print(f"❌ Could not find price for {asin} ({name})")
+
+    save_last_prices(current_prices)
+
+if __name__ == "__main__":
+    main()
