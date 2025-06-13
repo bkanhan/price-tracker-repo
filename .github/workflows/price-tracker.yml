@@ -34,4 +34,13 @@ jobs:
       - name: Run price tracker script
         env:
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
-          EMAIL_PASSWORD: ${{ secrets.E_
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        run: python ulta_tracker.py
+
+      - name: Save cache for promo and price tracking files
+        uses: actions/cache@v3
+        with:
+          path: |
+            promo_seen.txt
+            last_price.txt
+          key: promo-flag
