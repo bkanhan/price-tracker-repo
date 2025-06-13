@@ -13,10 +13,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Restore promo_seen.txt cache
+      - name: Restore cache for promo and price tracking files
         uses: actions/cache@v3
         with:
-          path: promo_seen.txt
+          path: |
+            promo_seen.txt
+            last_price.txt
           key: promo-flag
 
       - name: Set up Python
@@ -32,5 +34,4 @@ jobs:
       - name: Run price tracker script
         env:
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
-          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-        run: python ulta_tracker.py
+          EMAIL_PASSWORD: ${{ secrets.E_
