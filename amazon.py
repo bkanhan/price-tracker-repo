@@ -44,14 +44,3 @@ def get_amazon_price(asin):
 
     except requests.RequestException as e:
         print(f"❌ Network error while fetching ASIN {asin}: {e}")
-        return None
-    except Exception as e:
-        print(f"❌ Unexpected error for ASIN {asin}: {e}")
-        return None
-
-def load_last_prices():
-    if os.path.exists(LAST_PRICES_FILE):
-        try:
-            with open(LAST_PRICES_FILE, "r") as file:
-                return json.load(file)
-        except Exception as
