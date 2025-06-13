@@ -20,11 +20,11 @@ def get_amazon_price(asin):
         response = requests.get(url, headers=HEADERS, timeout=15)
         soup = BeautifulSoup(response.content, "html.parser")
 
-        # Look for price blocks in known Amazon patterns
+        # Known patterns for price elements
         selectors = [
-            '#corePrice_feature_div .a-offscreen',  # Regular price
-            '.a-price .a-offscreen',                # Alternate location
-            '#snsBasePrice .a-offscreen',           # Subscribe & Save (we will skip this)
+            '#corePrice_feature_div .a-offscreen',
+            '.a-price .a-offscreen',
+            '#snsBasePrice .a-offscreen',  # skip Subscribe & Save
         ]
 
         for selector in selectors:
@@ -33,17 +33,4 @@ def get_amazon_price(asin):
                 price_text = tag.text.strip()
                 if "Subscribe" in price_text:
                     continue
-                return price_text
-    except Exception as e:
-        print(f"⚠️ Error fetching {asin}: {e}")
-    return None
-
-def load_last_prices():
-    if os.path.exists(LAST_PRICES_FILE):
-        with open(LAST_PRICES_FILE, "r") as f:
-            return json.load(f)
-    return {}
-
-def save_last_prices(data):
-    with open(LAST_PRICES_FILE, "w") as f:
-        json.dump(data, f, in
+                retu
