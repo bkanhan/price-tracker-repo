@@ -6,7 +6,10 @@ from email.message import EmailMessage
 
 # --- CONFIG ---
 
-ASINS = ["B0CPFWKGPZ", "YOUR_SECOND_ASIN_HERE"]
+ASINS = [
+    "B0CPFWKGPZ",  # Lick Snack Chicken Treat Value Pack
+    "B0CPFVHS7P"   # Lick Snack Salmon Treat Value Pack
+]
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
