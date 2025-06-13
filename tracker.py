@@ -15,6 +15,8 @@ PROMO_KEYWORDS = [
     "discount applied at checkout"
 ]
 
+FLAG_FILE = "promo_seen.txt"  # state tracker
+
 def fetch_product_page(url):
     headers = {"User-Agent": "Mozilla/5.0"}
     response = requests.get(url, headers=headers)
@@ -26,6 +28,17 @@ def parse_promotions(html_content):
     text = soup.get_text().lower()
     found_promos = [keyword for keyword in PROMO_KEYWORDS if keyword in text]
     return found_promos
+
+def already_alerted():
+    return os.path.exists(FLAG_FILE)
+
+def mark_alert_sent():
+    with open(FLAG_FILE, "w") as f:
+        f.write("sent")
+
+def clear_alert_flag():
+    if os.path.exists(FLAG_FILE):
+        os.remove(FLAG_FILE)
 
 def send_email_notification(promotions):
     if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
@@ -46,10 +59,17 @@ def main():
     try:
         html_content = fetch_product_page(PRODUCT_URL)
         promotions = parse_promotions(html_content)
+
         if promotions:
-            send_email_notification(promotions)
+            if not already_alerted():
+                send_email_notification(promotions)
+                mark_alert_sent()
+            else:
+                print("Promotions found, but email already sent.")
         else:
             print("No applicable promotions found.")
+            clear_alert_flag()  # Reset if promotion is gone
+
     except Exception as e:
         print(f"Error occurred: {e}")
 
