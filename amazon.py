@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import os
+import sys
 
 ASINS = {
     "B0CPFWKGPZ": "Lick Snack Chicken Treat",
@@ -26,11 +27,31 @@ def get_amazon_price(asin):
         response.raise_for_status()
         soup = BeautifulSoup(response.content, "html.parser")
 
-        # Try multiple common price selectors
+        # Try multiple selectors in order
         selectors = [
             "#priceblock_ourprice",
             "#priceblock_dealprice",
             "#price_inside_buybox",
             ".a-price .a-offscreen"
         ]
-        for selector in selector
+        for selector in selectors:
+            price_elem = soup.select_one(selector)
+            if price_elem:
+                return price_elem.text.strip()
+
+        print(f"❌ Could not find price on page for ASIN: {asin}")
+        return None
+
+    except requests.RequestException as e:
+        print(f"❌ Network error while fetching ASIN {asin}: {e}")
+        return None
+    except Exception as e:
+        print(f"❌ Unexpected error for ASIN {asin}: {e}")
+        return None
+
+def load_last_prices():
+    if os.path.exists(LAST_PRICES_FILE):
+        try:
+            with open(LAST_PRICES_FILE, "r") as file:
+                return json.load(file)
+        except Exception as
