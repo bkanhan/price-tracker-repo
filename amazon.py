@@ -20,11 +20,10 @@ def get_amazon_price(asin):
         response = requests.get(url, headers=HEADERS, timeout=15)
         soup = BeautifulSoup(response.content, "html.parser")
 
-        # Known patterns for price elements
+        # Try multiple known selectors
         selectors = [
             '#corePrice_feature_div .a-offscreen',
             '.a-price .a-offscreen',
-            '#snsBasePrice .a-offscreen',  # skip Subscribe & Save
         ]
 
         for selector in selectors:
@@ -32,5 +31,7 @@ def get_amazon_price(asin):
             if tag:
                 price_text = tag.text.strip()
                 if "Subscribe" in price_text:
-                    continue
-                retu
+                    continue  # skip subscribe prices
+                return price_text
+    except Exception as e:
+        print(f"⚠️ Error fetching {asin}: {e
