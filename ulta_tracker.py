@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 from bs4 import BeautifulSoup
 from email.message import EmailMessage
@@ -15,7 +16,8 @@ PROMO_KEYWORDS = [
     "discount applied at checkout"
 ]
 
-FLAG_FILE = "promo_seen.txt"  # state tracker
+PROMO_SEEN_FILE = "promo_seen.txt"
+PRICE_FILE = "last_price.txt"
 
 def fetch_product_page(url):
     headers = {"User-Agent": "Mozilla/5.0"}
@@ -29,27 +31,63 @@ def parse_promotions(html_content):
     found_promos = [keyword for keyword in PROMO_KEYWORDS if keyword in text]
     return found_promos
 
-def already_alerted():
-    return os.path.exists(FLAG_FILE)
+def parse_price(html_content):
+    soup = BeautifulSoup(html_content, 'html.parser')
+    # Try to find price using common Ulta price classes or id (adjust if needed)
+    # Prices usually like: $34.00
+    price_text = None
 
-def mark_alert_sent():
-    with open(FLAG_FILE, "w") as f:
-        f.write("sent")
+    # Example attempt to find price span by class - this might change depending on the page HTML
+    price_spans = soup.find_all('span', class_=re.compile('Price|price|product-price', re.I))
+    for span in price_spans:
+        text = span.get_text()
+        if text and re.search(r'\$\d+(\.\d{2})?', text):
+            price_text = text
+            break
 
-def clear_alert_flag():
-    if os.path.exists(FLAG_FILE):
-        os.remove(FLAG_FILE)
+    if not price_text:
+        # fallback: search whole page text for first $XX.XX pattern
+        match = re.search(r'\$\d{1,3}(,\d{3})*(\.\d{2})?', soup.get_text())
+        if match:
+            price_text = match.group(0)
 
-def send_email_notification(promotions):
+    if price_text:
+        # Clean price string, remove $ and commas
+        price_number = float(price_text.replace('$', '').replace(',', '').strip())
+        return price_number
+    else:
+        raise ValueError("Price not found on page")
+
+def read_last_price():
+    if os.path.exists(PRICE_FILE):
+        with open(PRICE_FILE, 'r') as f:
+            try:
+                return float(f.read().strip())
+            except:
+                return None
+    return None
+
+def write_last_price(price):
+    with open(PRICE_FILE, 'w') as f:
+        f.write(str(price))
+
+def read_promo_seen():
+    return os.path.exists(PROMO_SEEN_FILE)
+
+def write_promo_seen():
+    with open(PROMO_SEEN_FILE, 'w') as f:
+        f.write("seen")
+
+def send_email_notification(subject, body):
     if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
         print("Missing email credentials.")
         return
+
     msg = EmailMessage()
-    msg['Subject'] = f"Promotion Alert: {PRODUCT_NAME}"
+    msg['Subject'] = subject
     msg['From'] = EMAIL_ADDRESS
     msg['To'] = EMAIL_ADDRESS
-    promo_list = "\n".join(promotions)
-    msg.set_content(f"The following promotions were found for {PRODUCT_NAME}:\n\n{promo_list}\n\nCheck it out here: {PRODUCT_URL}")
+    msg.set_content(body)
 
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
         smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
@@ -58,17 +96,47 @@ def send_email_notification(promotions):
 def main():
     try:
         html_content = fetch_product_page(PRODUCT_URL)
-        promotions = parse_promotions(html_content)
 
-        if promotions:
-            if not already_alerted():
-                send_email_notification(promotions)
-                mark_alert_sent()
-            else:
-                print("Promotions found, but email already sent.")
+        # Check promotions
+        promotions = parse_promotions(html_content)
+        promo_already_seen = read_promo_seen()
+
+        # Check price
+        current_price = parse_price(html_content)
+        last_price = read_last_price()
+
+        send_email = False
+        email_subject = ""
+        email_body = ""
+
+        # Determine if promo notification is needed
+        if promotions and not promo_already_seen:
+            send_email = True
+            email_subject = f"Promotion Alert: {PRODUCT_NAME}"
+            promo_list = "\n".join(promotions)
+            email_body += f"New promotions found for {PRODUCT_NAME}:\n\n{promo_list}\n\n"
+
+        # Determine if price dropped
+        if last_price is None:
+            # First run - just save price, no email
+            write_last_price(current_price)
+        elif current_price < last_price:
+            send_email = True
+            email_subject = f"Price Drop Alert: {PRODUCT_NAME}"
+            email_body += (f"The price dropped from ${last_price:.2f} to ${current_price:.2f}!\n\n")
+
+            write_last_price(current_price)
+
+        # If promo notification was sent, mark it as seen to avoid repeat emails
+        if send_email and promotions:
+            write_promo_seen()
+
+        if send_email:
+            email_body += f"Check it out here: {PRODUCT_URL}"
+            send_email_notification(email_subject, email_body)
+            print("Notification email sent.")
         else:
-            print("No applicable promotions found.")
-            clear_alert_flag()  # Reset if promotion is gone
+            print("No new promotions or price drops detected.")
 
     except Exception as e:
         print(f"Error occurred: {e}")
